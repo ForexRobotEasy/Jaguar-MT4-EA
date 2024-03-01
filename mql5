@@ -1,0 +1,111 @@
+
+// Jaguar MT4 EA - Trading Robot
+// Developer's site: forexroboteasy.com
+// Developer: Forex Robot Easy Team
+
+// Grid Trading Strategy with Moving Averages
+
+// Define input parameters
+input double lotSize = 0.01; // Lot size for each trade
+input double gridDistance = 10; // Distance between grid levels
+input int maxOrders = 5; // Maximum number of open buy or sell trades
+input int maxSpread = 5; // Maximum permissible spread for trading
+input int magicNumber = 123456; // Magic number for trades
+
+// Define global variables
+int totalOrders = 0; // Total number of open orders
+
+// Define moving average variables
+double maFast, maSlow, maSuperFast, maUltraFast; // Moving average values
+
+// Define function to calculate moving averages
+void CalculateMovingAverages() {
+    maFast = iMA(NULL, 0, 5, 0, MODE_SMA, PRICE_CLOSE, 1); // Calculate fast moving average
+    maSlow = iMA(NULL, 0, 10, 0, MODE_SMA, PRICE_CLOSE, 1); // Calculate slow moving average
+    maSuperFast = iMA(NULL, 0, 3, 0, MODE_SMA, PRICE_CLOSE, 1); // Calculate super fast moving average
+    maUltraFast = iMA(NULL, 0, 2, 0, MODE_SMA, PRICE_CLOSE, 1); // Calculate ultra fast moving average
+}
+
+// Define function to open buy trade
+void OpenBuyTrade() {
+    double openPrice = Ask; // Get current ask price
+    int ticket = OrderSend(Symbol(), OP_BUY, lotSize, openPrice, 3, openPrice - gridDistance, openPrice + gridDistance, 'Jaguar MT4 EA', magicNumber, 0, Blue); // Open buy trade
+    if(ticket > 0) {
+        totalOrders++; // Increment total number of open orders
+    }
+}
+
+// Define function to open sell trade
+void OpenSellTrade() {
+    double openPrice = Bid; // Get current bid price
+    int ticket = OrderSend(Symbol(), OP_SELL, lotSize, openPrice, 3, openPrice + gridDistance, openPrice - gridDistance, 'Jaguar MT4 EA', magicNumber, 0, Red); // Open sell trade
+    if(ticket > 0) {
+        totalOrders++; // Increment total number of open orders
+    }
+}
+
+// Define function to close all open trades
+void CloseAllTrades() {
+    for(int i=OrdersTotal()-1; i>=0; i--) {
+        if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES)) {
+            if(OrderSymbol() == Symbol() && OrderMagicNumber() == magicNumber && (OrderType() == OP_BUY || OrderType() == OP_SELL)) {
+                OrderClose(OrderTicket(), OrderLots(), OrderClosePrice(), 3, White); // Close order
+                totalOrders--; // Decrement total number of open orders
+            }
+        }
+    }
+}
+
+// Define function to handle unexpected situations and prevent crashes
+void ErrorHandling() {
+    if(GetLastError() != 0) {
+        Print('Error: ', GetLastError()); // Print error code
+    }
+}
+
+// Define function to optimize code for speed and efficiency
+void OptimizeCode() {
+    // Place optimization code here
+}
+
+// Define function to adapt to market conditions
+void AdaptToMarketConditions() {
+    // Place adaptive code here
+}
+
+// Initialize the EA
+int OnInit() {
+    CalculateMovingAverages(); // Calculate initial moving average values
+    return(INIT_SUCCEEDED); // Return initialization success
+}
+
+// Handle tick event
+void OnTick() {
+    if(totalOrders < maxOrders && MarketInfo(Symbol(), MODE_SPREAD) <= maxSpread) {
+        if(maUltraFast > maSuperFast && maSuperFast > maFast && maFast > maSlow) {
+            OpenBuyTrade(); // Open buy trade
+        } else if(maUltraFast < maSuperFast && maSuperFast < maFast && maFast < maSlow) {
+            OpenSellTrade(); // Open sell trade
+        }
+    }
+}
+
+// Handle deinitialization event
+void OnDeinit(const int reason) {
+    CloseAllTrades(); // Close all open trades
+}
+
+// Handle errors
+void OnError(const int error) {
+    ErrorHandling(); // Handle errors
+}
+
+// Handle optimization
+void OnTester() {
+    OptimizeCode(); // Optimize code for speed and efficiency
+}
+
+// Handle adaptive code
+void OnAdapt() {
+    AdaptToMarketConditions(); // Adapt to market conditions
+}
